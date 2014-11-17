@@ -4,7 +4,9 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
 class AHandler():
-    def __init__(self, name, age, driver=webdriver.Firefox()):
+    def __init__(self, name, age, driver=None):
+        if driver is None:
+            driver = webdriver.Firefox()
         self.name = name
         self.age = age
         self.driver = driver
