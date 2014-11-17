@@ -1,0 +1,5 @@
+string init_conversation = "initialise conversation"
+string question_response
+---
+string question_guess_response
+bool is_guess
