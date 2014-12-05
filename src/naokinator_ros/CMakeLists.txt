@@ -6,8 +6,8 @@ project(naokinator_ros)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  nao_driver
-  nao_msgs
+  naoqi_driver
+  naoqi_msgs
   std_msgs
   message_generation
 )
@@ -69,7 +69,7 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  geometry_msgs   nao_msgs   std_msgs
+  geometry_msgs   naoqi_msgs   std_msgs
 )
 
 ###################################
@@ -84,7 +84,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES naokinator_ros
-#  CATKIN_DEPENDS geometry_msgs nao_driver nao_msgs std_msgs
+#  CATKIN_DEPENDS geometry_msgs naoqi_driver naoqi_msgs std_msgs
 #  DEPENDS system_lib
 )
 
