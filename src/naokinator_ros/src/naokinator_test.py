@@ -5,6 +5,7 @@ from naokinator_ros.srv import akinator_srv
 from std_msgs.msg import String
 from std_srvs.srv import Empty
 from naoqi_msgs.msg import WordRecognized
+
 ## FIXME words must be in the robot to be able to recognize something
 
 word = None
