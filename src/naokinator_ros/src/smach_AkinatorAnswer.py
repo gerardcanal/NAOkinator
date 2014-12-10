@@ -1,6 +1,7 @@
 __author__ = 'dani'
 
 import rospy
+import sys
 from smach import StateMachine
 
 from std_msgs.msg import String
@@ -26,11 +27,18 @@ class AkinatorAnswer(StateMachine):
 
 word = None
 class Answer(smach.State):
-    def __init__(self):
+    def __init__(self, timeout = None):
+        import random
         self.startrec = rospy.ServiceProxy('/start_recognition', Empty)
         self.stoprec = rospy.ServiceProxy('/stop_recognition', Empty)
         self.pub = rospy.Publisher('/speech', String)
         rospy.Subscriber("/word_recognized", WordRecognized, self.callback)
+
+        if timeout is None:
+            self._timeout = random.randint(1,15) + 25
+        else:
+            self._timeout = timeout
+
 
     def callback(data):
         ## FIXME words must be in the robot to be able to recognize something
@@ -49,9 +57,14 @@ class Answer(smach.State):
         self.startrec()
         self.pub.publish(userdata.text)
         sys.stdout.write(userdata.text+' ')
-        while word is None:
+
+        startT = rospy.Time.now()
+        timeout = False
+        while not (timeout or (word is None)):
+            timeout = (rospy.Time.now()-startT) > self._timeout
             if rospy.is_shutdown():
                 sys.exit(-1)
+
         self.stoprec()
         print word
         word = None
