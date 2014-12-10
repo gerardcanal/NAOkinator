@@ -9,67 +9,54 @@ from std_msgs.msg import String
 from std_srvs.srv import Empty
 from naoqi_msgs.msg import WordRecognized
 
-from nao_smach_utils.tts_state import SpeechState
-from nao_smach_utils.go_to_posture_state import ExecuteBehavior
+from nao_smach_utils.execute_speechgesture_state import SpeechGesture
+from smach_AkinatorQuestion import AkinatorQuestion
+from smach_AkinatorAnswer import AkinatorAnswer
 
 class AkinatorGame(StateMachine):
     def __init__(self):
         StateMachine.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'])
         self.userdata.is_guess = False
         self.userdata.text = None
+        self.userdata.n_questions = 0
+        self.userdata.n_repeats = 0
         with self:
             # TODO integrate movements, timeout, unsuscribing from /word_recognized and maximum questions to WIN/LOSE
             StateMachine.add('QUESTION',
-                             Question(),
+                             AkinatorQuestion(),
                              transitions={'succeeded':'ANSWER'},
                              remapping={'text':'text'}
             )
             StateMachine.add('ANSWER',
-                             Answer(),
-                             transitions={'succeeded':'succeeded' if self.userdata.is_guess else 'QUESTION'},
+                             AkinatorAnswer(),
+                             transitions={'succeeded':'succeeded' if self.userdata.is_guess else 'QUESTIONSCOUNT',
+                                          'aborted':'REPEAT'},
                              remapping={'text':'text', 'is_guess_out':'is_guess'}
             )
+            StateMachine.add('QUESTIONSCOUNT',
+                             CountdownController(25),
+                             transitions={'succeeded':'QUESTION','aborted':'succeeded'},
+                             remapping={'count':'n_questions'}
+            )
+            StateMachine.add('REPEAT',
+                             SpeechGesture(text='I did not listen you. Can your repeat?', behavior_name='AskingAgain1'),
+                             transitions={'succeeded':'ANSWER'})
+            StateMachine.add('REPEATCOUNT',
+                             CountdownController(2),
+                             transitions={'succeeded':'QUESTION','aborted':'succeeded'},
+                             remapping={'count':'n_questions'})
+            StateMachine.add('REPEATRESET',
+                             Repeat_reset(2),
+                             transitions={'succeeded':'QUESTION','aborted':'succeeded'},
+                             remapping={'count':'n_questions'})
 
-class Question(smach.State):
-    def __init__(self):
-        self.naokinatorsrv = rospy.ServiceProxy('/akinator_srv', akinator_srv)
-
-    def execute(self, userdata):
-        if (userdata.text is None):
-            userdata.text = ''
-
-        userdata.text = self.naokinatorsrv(userdata.text)
-        return 'succeeded'
-
-word = None
-
-class Answer(smach.State):
-    def __init__(self):
-        self.startrec = rospy.ServiceProxy('/start_recognition', Empty)
-        self.stoprec = rospy.ServiceProxy('/stop_recognition', Empty)
-        self.pub = rospy.Publisher('/speech', String)
-        rospy.Subscriber("/word_recognized", WordRecognized, self.callback)
-
-    def callback(data):
-        ## FIXME words must be in the robot to be able to recognize something
-        yes_words = ['yes', 'si', 'se', 'yea', 'yeah', 'see', 'sea', 'yi', 'yees', 'probably', 'maybe']
-        no_words = ['no', 'nu', 'mo','mu','nou', 'now', 'nope']
-
-        maxc = -1
-        print "Recognized words:", zip(data.words, data.confidence_values)
-        for w, c in zip(data.words, data.confidence_values):
-            if c > maxc:
-                word = 'yes' if w in yes_words else 'no'
-                maxc = c
+class CountdownController(smach.State):
+    def __init__(self, max):
+        self.max = max
 
     def execute(self, userdata):
-        global word
-        self.startrec()
-        self.pub.publish(userdata.text)
-        sys.stdout.write(userdata.text+' ')
-        while word is None:
-            if rospy.is_shutdown():
-                sys.exit(-1)
-        self.stoprec()
-        print word
-        word = None
+        self.userdata.count = self.userdata.count+1
+        if self.userdata.count < self.max:
+            return 'succeeded'
+        else:
+            return 'aborted'
