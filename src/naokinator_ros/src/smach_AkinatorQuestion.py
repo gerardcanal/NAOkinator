@@ -1,10 +1,15 @@
 __author__ = 'dani'
 
 import rospy
-from smach import StateMachine
+from smach import StateMachine, State, ServiceState
 
 from naokinator_ros.srv import akinator_srv
 from nao_smach_utils.execute_speechgesture_state import SpeechGesture
+
+class StartAkinatorService(ServiceState):
+    def __init__(self):
+        ServiceState.__init__(self, '/akinator_srv', akinator_srv)
+
 
 class AkinatorQuestion(StateMachine):
     def __init__(self, type):
@@ -21,7 +26,7 @@ class AkinatorQuestion(StateMachine):
                              SpeechGesture(text=self.userdata.text, behavior_name='Asking1'),
                              transitions={'succeeded':'succeeded'})
 
-class Question(smach.State):
+class Question(State):
     def __init__(self):
         self.naokinatorsrv = rospy.ServiceProxy('/akinator_srv', akinator_srv)
 

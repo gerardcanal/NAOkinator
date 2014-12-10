@@ -4,6 +4,8 @@ import rospy
 from smach import StateMachine
 
 from nao_smach_utils.execute_speechgesture_state import SpeechGesture
+from nao_smach_utils.execute_choregraphe_behavior_state import ExecuteBehavior
+from nao_smach_utils.stiffness_states import DisableStiffnessState
 from nao_smach_utils.tts_state import SpeechState
 from nao_smach_utils.go_to_posture_state import GoToPostureState
 
@@ -15,15 +17,29 @@ class StartNaokinator(StateMachine):
         self.userdata.win = False
 
         with self:
+
+            #PREPARE NAO
+            StateMachine.add('PREPARE',
+                             HomeON_SM('Sit'),
+                             transitions={'succeeded':'GAME_INTRO'})
+
+            '''
             StateMachine.add('SIT_INIT',
                              GoToPostureState('Sit', 0.6),
                              transitions={'succeeded': 'START_GAME_INTRO'})
+            '''
 
             ## INTRODUCTION OF THE GAME
+
+            StateMachine.add('START_GAME_INTRO',
+                             SpeechGesture(behavior_name='Presentation'),
+                             transitions={'succeeded':'GAME'})
+
+            ''''
             StateMachine.add('START_GAME_INTRO',
                              SpeechGesture(text='I am Naomi', behavior_name='Presentation-IamNAOMI'),
                              transitions={'succeeded':'START_GAME_INSTRUCTIONS'})
-            '''
+
             StateMachine.add('START_GAME_YEAR',
                              SpeechGesture(text='What's your name?', behavior_name='Presentation-WhatsYourName'),
                              transitions={'succeeded':'GAME_INTRO_YEAR'})
@@ -31,7 +47,6 @@ class StartNaokinator(StateMachine):
             StateMachine.add('START_GAME_NAME',
                              SpeechGesture(text='How old are you?', behavior_name='Presentation-WhatsYourName'),
                              transitions={'succeeded':'GAME_INTRO_INSTRUCTIONS'})
-            '''
 
             instructions = 'I am gonna explain you a game. Think about a any character and ' \
                            'I am going to try to find out who are you thinking about. ' \
@@ -45,6 +60,10 @@ class StartNaokinator(StateMachine):
             StateMachine.add('GAME_INTRO_START',
                              SpeechGesture(text='Let\'s start the game', behavior_name='Presentation2-1'),
                              transitions={'succeeded':'GAME'})
+            '''
+
+
+
 
             #GAME LOOP
             StateMachine.add('GAME',
@@ -57,10 +76,15 @@ class StartNaokinator(StateMachine):
 
             StateMachine.add('WIN',
                              SpeechGesture(text='Yeah! I knew it!', behavior_name='Win1'),
-                             transitions={'succeeded':'suceeded'})
+                             transitions={'succeeded':'DISABLE_STIFF'})
             StateMachine.add('GAME_INTRO_START',
-                             SpeechGesture(text='Oh, i missed it completely.', behavior_name='Lose1'),
-                             transitions={'succeeded':'suceeded'})
+                             SpeechGesture(text='Oh! i missed it completely!', behavior_name='Lose1'),
+                             transitions={'succeeded':'DISABLE_STIFF'})
+
+            StateMachine.add('DISABLE_STIFF',
+                             DisableStiffnessState(),
+                             transitions={'succeeded':'succeeded'})
+
 
 
 if __name__ == "__main__":
