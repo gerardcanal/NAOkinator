@@ -4,8 +4,9 @@ import rospy
 from smach import StateMachine, State
 from smach_ros import ServiceState
 
-from naokinator_ros.srv import akinator_srv
+from naokinator_ros.srv import AkinatorQA
 from nao_smach_utils.execute_speechgesture_state import SpeechGesture
+from nao_smach_utils.execute_choregraphe_behavior_state import ExecuteBehaviorFromPoolSM
 
 
 class AkinatorServiceState(ServiceState):
@@ -15,7 +16,7 @@ class AkinatorServiceState(ServiceState):
             if response.is_guess:
                 return 'game_finished'
             return 'continue_game'
-        ServiceState.__init__(self, '/akinator_srv', akinator_srv, output_keys=['resp_text'], request_slots=['question_response'], outcomes=['game_finished', 'continue_game'], response_cb=resp_cb)
+        ServiceState.__init__(self, '/akinator_srv', AkinatorQA, output_keys=['resp_text'], request_slots=['question_response'], outcomes=['game_finished', 'continue_game'], response_cb=resp_cb)
 
 
 class AkinatorRequestQuestion(StateMachine):
@@ -32,5 +33,5 @@ class AkinatorRequestQuestion(StateMachine):
 
 
             StateMachine.add('QUESTION_GESTURE',
-                             SpeechGesture(behavior_name='CIR_Asking1'),
+                             SpeechGesture(behavior_name=['CIR_Asking1','CIR_Asking2','CIR_Asking3','CIR_Asking4','CIR_Asking5','CIR_Asking6']),
                              transitions={'succeeded': 'succeeded'})

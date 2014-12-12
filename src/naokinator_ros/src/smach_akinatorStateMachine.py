@@ -2,16 +2,18 @@ __author__ = 'dani'
 #!/usr/bin/env python
 
 from smach import StateMachine, CBState
+from smach_ros import ServiceState
 
 from nao_smach_utils.execute_speechgesture_state import SpeechGesture
 from smach_AkinatorQuestion import AkinatorRequestQuestion
-from smach_AkinatorAnswer import AkinatorAnswer
+from smach_AkinatorAnswer import GetUserAnswer
+from nao_smach_utils.execute_choregraphe_behavior_state import ExecuteBehaviorFromPoolSM
 
 
 class AkinatorGame(StateMachine):
 
     def __init__(self):
-        StateMachine.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'], output_keys=['win'])
+        StateMachine.__init__(self, output_keys=['text'], outcomes=['succeeded', 'aborted', 'preempted'])
         self.userdata.text = ''
         self.userdata.max_questions = 25
         self.userdata.n_questions = 0
@@ -20,17 +22,23 @@ class AkinatorGame(StateMachine):
         with self:
             # TODO integrate movements, timeout, unsuscribing from /word_recognized and maximum questions to WIN/LOSE
 
+
             StateMachine.add('QUESTION',
                              AkinatorRequestQuestion(),
                              transitions={'succeeded':'GET_USER_ANSWER', 'aborted':'succeeded'},
                              remapping={'user_answer':'text','text':'text'}
                              )
             StateMachine.add('GET_USER_ANSWER',
-                             AkinatorAnswer(),
-                             transitions={'succeeded':'QUESTIONSCOUNT',
-                                          'aborted':'REPEAT'},
+                             GetUserAnswer(),
+                             transitions={'succeeded':'THINKING',
+                                          'aborted':'REPEATCOUNT'},
                              remapping={'text':'text'}
                              )
+            
+            StateMachine.add('THINKING',
+                             #SpeechGesture(text='Let me see', behavior_name='CIR_Thinking1'),
+                             ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Thinking1','CIR_Thinking2','CIR_Thinking3','CIR_Thinking4','CIR_Thinking5','CIR_Thinking6']),
+                             transitions={'succeeded':'REPEATRESET'})
             '''
             StateMachine.add('ISGUESS',
                              CBState(self.guess_cb, input_keys=['is_guess'], outcomes=['finished', 'continue']),
@@ -57,12 +65,12 @@ class AkinatorGame(StateMachine):
                                      input_keys=['count','max'],
                                      output_keys=['count'],
                                      outcomes=['succeeded', 'aborted']),
-                             transitions={'succeeded':'REPEATRESET','aborted':'aborted'},
+                             transitions={'succeeded':'REPEAT','aborted':'aborted'},
                              remapping={'count':'n_repeats','max':'max_repeats'})
 
             StateMachine.add('REPEATRESET',
-                             CBState(self.reset_cb, output_keys=['n_repeats'], outcomes=['succeeded']),
-                             transitions={'succeeded':'QUESTION'},
+                             CBState(self.reset_cb, output_keys=['var'], outcomes=['succeeded']),
+                             transitions={'succeeded':'QUESTIONSCOUNT'},
                              remapping={'var':'n_repeats'})
 
 
@@ -73,7 +81,7 @@ class AkinatorGame(StateMachine):
 
     def countdown_cb(self,ud):
         ud.count = ud.count+1
-        if ud.counter < ud.max: return 'succeeded'
+        if ud.count < ud.max: return 'succeeded'
         return 'aborted'
 
     def reset_cb(self,ud):

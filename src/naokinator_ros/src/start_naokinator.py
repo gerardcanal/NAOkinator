@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 import rospy
 
-from smach import StateMachine
+from smach import StateMachine, CBState, Concurrence
+from smach_ros import ServiceState, IntrospectionServer
 
+from naokinator_ros.srv import ResetAkinator, ResetAkinatorRequest
+from smach_AkinatorAnswer import GetUserAnswer, yes_words, no_words
 from smach_akinatorStateMachine import AkinatorGame
 from nao_smach_utils.execute_speechgesture_state import SpeechGesture
 from nao_smach_utils.execute_choregraphe_behavior_state import ExecuteBehavior
@@ -10,7 +13,7 @@ from nao_smach_utils.home_onoff import HomeOn_SM
 from nao_smach_utils.stiffness_states import DisableStiffnessState
 from nao_smach_utils.tts_state import SpeechState
 from nao_smach_utils.go_to_posture_state import GoToPostureState
-from nao_smach_utils.speech_recognition_states import StartRecognitionState,StopRecognitionState
+from nao_smach_utils.speech_recognition_states import SetSpeechVocabularyState, StopRecognitionState
 
 
 class StartNaokinator(StateMachine):
@@ -20,93 +23,84 @@ class StartNaokinator(StateMachine):
                                               'preempted', 'aborted'])
 
         self.userdata.text = ''
-        self.userdata.win = False
 
         with self:
 
-            #PREPARE NAO
-
-            StateMachine.add('CLEAN_LISTEN_STATE',
-                             StopRecognitionState(),
-                             transitions={'succeeded':'START_LISTEN'}
-                             )
-            StateMachine.add('START_LISTEN',
-                             StartRecognitionState(),
-                             transitions={'succeeded': 'PREPARE'}
-                             )
             StateMachine.add('PREPARE',
                              HomeOn_SM('Sit'),
-                             #transitions={'succeeded': 'START_GAME_INTRO'})
-                             transitions={'succeeded': 'GAME'})     #DEBUGGING LINE
+                             transitions={'succeeded': 'INIT'})
+                             #transitions={'succeeded': 'GAME'}) #DEBUGGING LINE
+            #PREPARE NAO
+            setup = StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
+            with setup:
+                StateMachine.add('CLEAN_LISTEN_STATE',
+                                 StopRecognitionState(),
+                                 transitions={'succeeded': 'SET_VOCABULARY'}
+                                 )
+                StateMachine.add('SET_VOCABULARY',
+                                 SetSpeechVocabularyState(no_words + yes_words),
+                                 transitions={'succeeded': 'RESET_AKINATOR'}
+                                 )
 
-            '''
-            StateMachine.add('SIT_INIT',
-                             GoToPostureState('Sit', 0.6),
-                             transitions={'succeeded': 'START_GAME_INTRO'})
-            '''
+                #RESET AKINATOR WEB
+                StateMachine.add('RESET_AKINATOR',
+                                 ServiceState('/reset_akinator_params',
+                                              ResetAkinator,
+                                              request=ResetAkinatorRequest('Name',15)),
+                                 transitions={'succeeded': 'succeeded'}
+                                 )
+            cc = Concurrence(outcomes=['succeeded', 'aborted', 'preempted'], default_outcome='aborted',
+                             outcome_map={'succeeded': {'START_GAME_INTRO': 'succeeded', 'SETUP': 'succeeded'}})
+            with cc:
+                # INTRODUCTION OF THE GAME
+                Concurrence.add('START_GAME_INTRO',
+                             ExecuteBehavior(behavior_name='CIR_Presentation'))
+                # NAO SETUP
+                Concurrence.add('SETUP', setup)
 
-            ## INTRODUCTION OF THE GAME
-
-            StateMachine.add('START_GAME_INTRO',
-                             ExecuteBehavior(behavior_name='CIR_Presentation'),
-                             transitions={'succeeded': 'GAME'},
-                             )
-
-            ''''
-            StateMachine.add('START_GAME_INTRO',
-                             SpeechGesture(text='I am Naomi',behavior_name=
-                                           'Presentation-IamNAOMI'),
-                             {'succeeded': 'START_GAME_INSTRUCTIONS'})
-
-            speechText = 'What's your name?'
-            behaviorName = 'Presentation-WhatsYourName'
-            StateMachine.add('START_GAME_YEAR',
-                             SpeechGesture(speechText,behaviorName),
-                             {'succeeded':'GAME_INTRO_YEAR'})
-
-            speechText = 'How old are you?'
-            behaviorName = 'Presentation-WhatsYourName'
-            StateMachine.add('START_GAME_NAME',
-                             SpeechGesture(speechText, behaviorName),
-                             {'succeeded': 'GAME_INTRO_INSTRUCTIONS'})
-
-            instructions = 'I am gonna explain you a game. Think about a any character and ' \
-                           'I am going to try to find out who are you thinking about. ' \
-                           'I will ask you some questions and you can answer me with ' \
-                           'yes or no. '
-                           #'yes, no, probably, probably not and i don\'t know. '
-            StateMachine.add('GAME_INTRO_INSTRUCTIONS',
-                             SpeechGesture(text=instructions, behavior_name='Presentation1-1'),
-                             transitions={'succeeded':'GAME_INTRO_START'})
-
-            StateMachine.add('GAME_INTRO_START',
-                             SpeechGesture(text='Let\'s start the game', behavior_name='Presentation2-1'),
-                             transitions={'succeeded':'GAME'})
-            '''
+            StateMachine.add('INIT', cc,
+                             transitions={'succeeded': 'GAME', 'aborted': 'LOSE'})
 
             #GAME LOOP
             StateMachine.add('GAME',
                              AkinatorGame(),
-                             transitions={'succeeded': 'WIN', 'aborted': 'LOSE'},
-                             remapping={'is_guess': 'win'}
+                             transitions={'succeeded': 'CHAR_QUESTION_MAKE', 'aborted': 'LOSE'}
                              )
 
             #END OF GAME
+            StateMachine.add('CHAR_QUESTION_MAKE',
+                             CBState(self.compoundQuestion,
+                                     input_keys=['text'],
+                                     output_keys=['text'],
+                                     outcomes=['succeeded', 'aborted']),
+                             transitions={'succeeded':'CHAR_CORRECT'}
+                             )
+
+            StateMachine.add('CHAR_CORRECT',
+                             SpeechGesture(behavior_name='CIR_Asking1'),
+                             transitions={'succeeded':'FINAL_ANSWER'}
+                             )
+            StateMachine.add('FINAL_ANSWER',
+                             GetUserAnswer(),
+                             transitions={'succeeded':'WIN', 'aborted': 'LOSE'}
+                             )
 
             StateMachine.add('WIN',
                              ExecuteBehavior(behavior_name='CIR_Winning1'),
                              transitions={'succeeded': 'DISABLE_STIFF'})
             StateMachine.add('LOSE',
-                             ExecuteBehavior(behavior_name='CIR_Losing1'),
+                             #ExecuteBehavior(behavior_name='CIR_Losing1'),
+                             SpeechGesture(text='Ohh i missed it completely',behavior_name='CIR_Losing1'),
                              transitions={'succeeded': 'DISABLE_STIFF'})
 
             StateMachine.add('DISABLE_STIFF',
                              DisableStiffnessState(),
-                             transitions={'succeeded': 'STOP_LISTEN'})
-            StateMachine.add('STOP_LISTEN',
-                             StopRecognitionState(),
-                             transitions={'succeeded':'succeeded'}
-                             )
+                             transitions={'succeeded': 'succeeded'})
+
+    def compoundQuestion(self, ud):
+        rospy.logwarn(ud.text)
+        ud.text = 'Is your character %s?' % ud.text
+        return 'succeeded'
 
 
 if __name__ == "__main__":
@@ -114,4 +108,9 @@ if __name__ == "__main__":
 
     sm = StartNaokinator()
 
+    sis = IntrospectionServer("naokinator_introspection_srv", sm, '/NAOKINATOR_ROOT')
+    sis.start()
+
     sm.execute()
+    rospy.spin()
+    sis.stop()

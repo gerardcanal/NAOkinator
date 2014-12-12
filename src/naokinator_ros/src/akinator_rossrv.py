@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import rospy
+import sys
 from AkinatorHandler import AHandler
 from naokinator_ros.srv import akinator_srv, reset_akinator, akinator_srvResponse, reset_akinatorResponse
 
@@ -43,6 +44,12 @@ def akinator_service():
 
 if __name__ == "__main__":
     rospy.init_node("AkinatorHandler_SRV")
-    name = raw_input("Input user name: ")
-    age = raw_input("Input user age: ")
+    if len(sys.argv) > 1:
+        name = sys.argv[1]
+        age = int(sys.argv[2])
+    else:
+        name = 'default'
+        age = 14
+    # name = raw_input("Input user name: ")
+    # age = raw_input("Input user age: ")
     akinator_service()
