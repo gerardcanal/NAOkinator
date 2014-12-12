@@ -55,8 +55,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
-   akinator_srv.srv
-   reset_akinator.srv
+   AkinatorQA.srv
+   ResetAkinator.srv
 )
 
 ## Generate actions in the 'action' folder
