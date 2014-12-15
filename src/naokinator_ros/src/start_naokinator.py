@@ -11,10 +11,9 @@ from nao_smach_utils.execute_speechgesture_state import SpeechGesture
 from nao_smach_utils.execute_choregraphe_behavior_state import ExecuteBehavior
 from nao_smach_utils.home_onoff import HomeOn_SM
 from nao_smach_utils.stiffness_states import DisableStiffnessState
-from nao_smach_utils.tts_state import SpeechState
-from nao_smach_utils.go_to_posture_state import GoToPostureState
 from nao_smach_utils.speech_recognition_states import SetSpeechVocabularyState, StopRecognitionState
 from nao_smach_utils.execute_choregraphe_behavior_state import ExecuteBehaviorFromPoolSM
+
 
 class StartNaokinator(StateMachine):
 
@@ -46,7 +45,7 @@ class StartNaokinator(StateMachine):
                 StateMachine.add('RESET_AKINATOR',
                                  ServiceState('/reset_akinator_params',
                                               ResetAkinator,
-                                              request=ResetAkinatorRequest('Name',15)),
+                                              request=ResetAkinatorRequest('Name', 15)),
                                  transitions={'succeeded': 'succeeded'}
                                  )
             cc = Concurrence(outcomes=['succeeded', 'aborted', 'preempted'], default_outcome='aborted',
@@ -54,7 +53,7 @@ class StartNaokinator(StateMachine):
             with cc:
                 # INTRODUCTION OF THE GAME
                 Concurrence.add('START_GAME_INTRO',
-                             ExecuteBehavior(behavior_name='CIR_Presentation'))
+                                ExecuteBehavior(behavior_name='CIR_Presentation'))
                 # NAO SETUP
                 Concurrence.add('SETUP', setup)
 
@@ -73,16 +72,16 @@ class StartNaokinator(StateMachine):
                                      input_keys=['text'],
                                      output_keys=['text'],
                                      outcomes=['succeeded', 'aborted']),
-                             transitions={'succeeded':'CHAR_CORRECT'}
+                             transitions={'succeeded': 'CHAR_CORRECT'}
                              )
 
             StateMachine.add('CHAR_CORRECT',
-                             SpeechGesture(behavior_name='CIR_Asking1'),
-                             transitions={'succeeded':'FINAL_ANSWER'}
+                             SpeechGesture(behavior_pool=['CIR_Asking1']),
+                             transitions={'succeeded': 'FINAL_ANSWER'}
                              )
             StateMachine.add('FINAL_ANSWER',
                              GetUserAnswer(),
-                             transitions={'succeeded':'CHECK_WIN_LOSE', 'aborted': 'LOSE'}
+                             transitions={'succeeded': 'CHECK_WIN_LOSE', 'aborted': 'LOSE'}
                              )
 
             def check_w_l(userdata):
