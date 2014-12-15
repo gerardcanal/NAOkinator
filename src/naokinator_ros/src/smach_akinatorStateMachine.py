@@ -19,6 +19,12 @@ class AkinatorGame(StateMachine):
         self.userdata.n_questions = 0
         self.userdata.max_repeats = 3
         self.userdata.n_repeats = 0
+        list_thinking= ['Let me think','Let me see','So','I think I am getting near','Uff, that is difficult','well',
+                        'I do not know what to ask you now','I think I am getting near.','Wait a second','Wait a moment'
+                        ,'Well. Hum','Um. Well','No clue about it','I think I may know it','Well, maybe is this.']
+        list_repeating=['I did not hear you well, can you repeat please?','Can you repeat your answer please?','What?',
+                        'Pardon?','I beg your pardon, could you repeat?','Again? What did you say?','Tell me again, please',
+                        'Which is your answer?','Repeat the asnwer please?','Did you say something?','And your answer is?' ]
         with self:
             # TODO integrate movements, timeout, unsuscribing from /word_recognized and maximum questions to WIN/LOSE
 
@@ -36,8 +42,8 @@ class AkinatorGame(StateMachine):
                              )
             
             StateMachine.add('THINKING',
-                             #SpeechGesture(text='Let me see', behavior_name='CIR_Thinking1'),
-                             ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Thinking1','CIR_Thinking2','CIR_Thinking3','CIR_Thinking4','CIR_Thinking5','CIR_Thinking6']),
+                             SpeechGesture(textpool=list_thinking, behavior_pool=['CIR_Thinking1','CIR_Thinking2','CIR_Thinking3','CIR_Thinking4','CIR_Thinking5','CIR_Thinking6']),
+                             #ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Thinking1','CIR_Thinking2','CIR_Thinking3','CIR_Thinking4','CIR_Thinking5','CIR_Thinking6']),
                              transitions={'succeeded':'REPEATRESET'})
             '''
             StateMachine.add('ISGUESS',
@@ -57,7 +63,8 @@ class AkinatorGame(StateMachine):
                              )
 
             StateMachine.add('REPEAT',
-                             SpeechGesture(text='I did not listen you. Can your repeat?', behavior_name='CIR_AskingAgain1'),
+                             SpeechGesture(textpool=list_repeating, behavior_pool=['CIR_AskingAgain1']),
+                             #SpeechGesture(text='I did not listen you. Can your repeat?', behavior_name='CIR_AskingAgain1'),
                              transitions={'succeeded':'GET_USER_ANSWER'})
 
             StateMachine.add('REPEATCOUNT',

@@ -14,7 +14,7 @@ from nao_smach_utils.stiffness_states import DisableStiffnessState
 from nao_smach_utils.tts_state import SpeechState
 from nao_smach_utils.go_to_posture_state import GoToPostureState
 from nao_smach_utils.speech_recognition_states import SetSpeechVocabularyState, StopRecognitionState
-
+from nao_smach_utils.execute_choregraphe_behavior_state import ExecuteBehaviorFromPoolSM
 
 class StartNaokinator(StateMachine):
 
@@ -86,11 +86,11 @@ class StartNaokinator(StateMachine):
                              )
 
             StateMachine.add('WIN',
-                             ExecuteBehavior(behavior_name='CIR_Winning1'),
+                             ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Winning1']),
                              transitions={'succeeded': 'DISABLE_STIFF'})
             StateMachine.add('LOSE',
                              #ExecuteBehavior(behavior_name='CIR_Losing1'),
-                             SpeechGesture(text='Ohh i missed it completely',behavior_name='CIR_Losing1'),
+                             ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Losing1']),
                              transitions={'succeeded': 'DISABLE_STIFF'})
 
             StateMachine.add('DISABLE_STIFF',
