@@ -82,15 +82,23 @@ class StartNaokinator(StateMachine):
                              )
             StateMachine.add('FINAL_ANSWER',
                              GetUserAnswer(),
-                             transitions={'succeeded':'WIN', 'aborted': 'LOSE'}
+                             transitions={'succeeded':'CHECK_WIN_LOSE', 'aborted': 'LOSE'}
                              )
+
+            def check_w_l(userdata):
+                if (userdata.text == 'yes'):
+                    return 'win'
+                return 'lose'
+            StateMachine.add('CHECK_WIN_LOSE',
+                             CBState(check_w_l, input_keys=['text'], outcomes=['win', 'lose']),
+                             transitions={'win': 'WIN', 'lose': 'LOSE'})
 
             StateMachine.add('WIN',
                              ExecuteBehavior(behavior_name='CIR_Winning1'),
                              transitions={'succeeded': 'DISABLE_STIFF'})
             StateMachine.add('LOSE',
-                             #ExecuteBehavior(behavior_name='CIR_Losing1'),
-                             SpeechGesture(text='Ohh i missed it completely',behavior_name='CIR_Losing1'),
+                             ExecuteBehavior(behavior_name='CIR_Losing1'),
+                             #SpeechGesture(text='Ohh i missed it completely',behavior_name='CIR_Losing1'),
                              transitions={'succeeded': 'DISABLE_STIFF'})
 
             StateMachine.add('DISABLE_STIFF',
