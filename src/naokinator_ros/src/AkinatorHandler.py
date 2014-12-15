@@ -14,11 +14,17 @@ class AHandler():
         self.questions = []
         self.answers = []
         self.guess = None
+        self.GetPage()
 
+    def GetPage(self):
         self.driver.get("http://en.akinator.com/personnages")
         txtage  = self.driver.find_element_by_xpath("//input[@id='elokence_sitebundle_identification_age']")
-        txtage.send_keys(str(age))
+        txtage.send_keys(str(self.age))
         txtage.submit()
+        try:
+            self.getQuestion()
+        except Exception:
+            self.GetPage()
 
     def getQuestion(self):
 
@@ -33,6 +39,7 @@ class AHandler():
                 self.questions.insert(self.nQuestion-1,Q)
         except NoSuchElementException:
             self.guess = self.driver.find_element_by_xpath("//h2[@id='perso']").text
+
 
         return Q
 
