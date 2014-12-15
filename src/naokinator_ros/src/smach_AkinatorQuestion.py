@@ -33,5 +33,5 @@ class AkinatorRequestQuestion(StateMachine):
 
 
             StateMachine.add('QUESTION_GESTURE',
-                             SpeechGesture(behavior_name=['CIR_Asking1','CIR_Asking2','CIR_Asking3','CIR_Asking4','CIR_Asking5','CIR_Asking6']),
+                             SpeechGesture(behavior_pool=['CIR_Asking1','CIR_Asking2','CIR_Asking3','CIR_Asking4','CIR_Asking5','CIR_Asking6']),
                              transitions={'succeeded': 'succeeded'})
