@@ -5,9 +5,10 @@ from smach import StateMachine, CBState, Concurrence
 from smach_ros import ServiceState, IntrospectionServer
 
 from naokinator_ros.srv import ResetAkinator, ResetAkinatorRequest
-from smach_AkinatorAnswer import GetUserAnswer, yes_words, no_words
+from smach_AkinatorAnswer import GetUserAnswer, yes_words, no_words, maybe_words, probably_not_words, dunno_words
 from smach_akinatorStateMachine import AkinatorGame
 from nao_smach_utils.execute_speechgesture_state import SpeechGesture
+from concurrent_userspeech_jointtrajectory import SpeechRecognitionAndGesture
 from nao_smach_utils.execute_choregraphe_behavior_state import ExecuteBehavior
 from nao_smach_utils.home_onoff import HomeOn_SM
 from nao_smach_utils.stiffness_states import DisableStiffnessState
@@ -37,7 +38,7 @@ class StartNaokinator(StateMachine):
                                  transitions={'succeeded': 'SET_VOCABULARY'}
                                  )
                 StateMachine.add('SET_VOCABULARY',
-                                 SetSpeechVocabularyState(no_words + yes_words),
+                                 SetSpeechVocabularyState(no_words + yes_words + probably_not_words + dunno_words + maybe_words),
                                  transitions={'succeeded': 'RESET_AKINATOR'}
                                  )
 
@@ -45,7 +46,7 @@ class StartNaokinator(StateMachine):
                 StateMachine.add('RESET_AKINATOR',
                                  ServiceState('/reset_akinator_params',
                                               ResetAkinator,
-                                              request=ResetAkinatorRequest('Name', 15)),
+                                              request=ResetAkinatorRequest('Name', 22)),
                                  transitions={'succeeded': 'succeeded'}
                                  )
             cc = Concurrence(outcomes=['succeeded', 'aborted', 'preempted'], default_outcome='aborted',
@@ -53,7 +54,7 @@ class StartNaokinator(StateMachine):
             with cc:
                 # INTRODUCTION OF THE GAME
                 Concurrence.add('START_GAME_INTRO',
-                                ExecuteBehavior(behavior_name='CIR_Presentation'))
+                                ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Presentation1', 'CIR_Presentation2']))
                 # NAO SETUP
                 Concurrence.add('SETUP', setup)
 
@@ -76,11 +77,11 @@ class StartNaokinator(StateMachine):
                              )
 
             StateMachine.add('CHAR_CORRECT',
-                             SpeechGesture(behavior_pool=['CIR_Asking1']),
+                             SpeechGesture(behavior_pool=['CIR_Asking1', 'CIR_Asking2', 'CIR_Asking3', 'CIR_Asking4', 'CIR_Asking5', 'CIR_Asking6']),
                              transitions={'succeeded': 'FINAL_ANSWER'}
                              )
             StateMachine.add('FINAL_ANSWER',
-                             GetUserAnswer(),
+                             SpeechRecognitionAndGesture(),
                              transitions={'succeeded': 'CHECK_WIN_LOSE', 'aborted': 'LOSE'}
                              )
 
@@ -93,11 +94,11 @@ class StartNaokinator(StateMachine):
                              transitions={'win': 'WIN', 'lose': 'LOSE'})
 
             StateMachine.add('WIN',
-                             ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Winning1']),
+                             ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Winning1', 'CIR_Winning2', 'CIR_Winning3', 'CIR_Winning4', 'CIR_Winning5']),
                              transitions={'succeeded': 'DISABLE_STIFF'})
             StateMachine.add('LOSE',
                              #ExecuteBehavior(behavior_name='CIR_Losing1'),
-                             ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Losing1']),
+                             ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Loosing1', 'CIR_Loosing2', 'CIR_Loosing3', 'CIR_Loosing4']),
                              transitions={'succeeded': 'DISABLE_STIFF'})
 
             StateMachine.add('DISABLE_STIFF',
