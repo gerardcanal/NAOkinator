@@ -1,5 +1,5 @@
 __author__ = 'dani'
-
+import rospy
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
@@ -27,6 +27,14 @@ class AHandler():
         except Exception:
             self.GetPage()
 
+    def cleanString(self, s):
+        s = s.replace('.', '')
+        s = s.replace('[', ' ')
+        s = s.replace(']', ' ')
+        s = s.replace('(', ' ')
+        s = s.replace(')', ' ')
+        return s
+
     def getQuestion(self):
 
         Q = ''
@@ -41,6 +49,7 @@ class AHandler():
         except NoSuchElementException:
             self.guess = self.driver.find_element_by_xpath("//h2[@id='perso']").text
 
+        Q = self.cleanString(Q)
         return Q
 
     def setAnswer(self, a):

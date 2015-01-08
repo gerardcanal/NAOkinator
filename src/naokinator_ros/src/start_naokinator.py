@@ -52,9 +52,10 @@ class StartNaokinator(StateMachine):
             cc = Concurrence(outcomes=['succeeded', 'aborted', 'preempted'], default_outcome='aborted',
                              outcome_map={'succeeded': {'START_GAME_INTRO': 'succeeded', 'SETUP': 'succeeded'}})
             with cc:
+                PresentationPool = ['CIR_Presentation1', 'CIR_Presentation2']
                 # INTRODUCTION OF THE GAME
                 Concurrence.add('START_GAME_INTRO',
-                                ExecuteBehaviorFromPoolSM(behavior_pool=['CIR_Presentation1', 'CIR_Presentation2']))
+                                ExecuteBehaviorFromPoolSM(behavior_pool=PresentationPool))
                 # NAO SETUP
                 Concurrence.add('SETUP', setup)
 

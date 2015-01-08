@@ -15,16 +15,16 @@ class AkinatorGame(StateMachine):
     def __init__(self):
         StateMachine.__init__(self, output_keys=['text'], outcomes=['succeeded', 'aborted', 'preempted'])
         self.userdata.text = ''
-        self.userdata.max_questions = 25
+        self.userdata.max_questions = 26
         self.userdata.n_questions = 0
         self.userdata.max_repeats = 3
         self.userdata.n_repeats = 0
         list_thinking = ['Let me think', 'Let me see', 'So', 'I think I am getting near', 'Uff, that is difficult', 'well',
                          'I do not know what to ask you now', 'I think I am getting near.', 'Wait a second', 'Wait a moment',
                          'Well. Hum', 'Um. Well', 'No clue about it', 'I think I may know it', 'Well, maybe is this.']
-        list_repeating = ['I did not hear you well, can you repeat please?', 'Can you repeat your answer please?', 'What?',
-                          'Pardon?', 'I beg your pardon, could you repeat?', 'Again? What did you say?', 'Tell me again, please',
-                          'Which is your answer?', 'Repeat the asnwer please?', 'Did you say something?', 'And your answer is?']
+        list_repeating = ['I did not hear you well, repeat please', 'Repeat your answer please', 'What?',
+                          'Pardon?', 'I beg your pardon, repeat it please', 'Again? What did you say?', 'Tell me again, please',
+                          'Which is your answer?', 'Repeat the answer please', 'Did you say something?', 'And again, your answer is?']
         with self:
             # TODO integrate movements, timeout, unsuscribing from /word_recognized and maximum questions to WIN/LOSE
 
