@@ -11,7 +11,7 @@ Some resources are needed to use this packages:
   3. nao_smach_utils package from the [NAO-UPC repository](https://github.com/gerardcanal/NAO-UPC "NAO-UPC"). This packages includes some utils to be used in SMACH state machines, and NAOkinator uses them intensively. The launch file in nao_utils may be handy as it launches every node that we need to run the NAOkinator on the NAO.
   4. All the behaviours from the folder NAOMIgestures should be installed previously on the NAO.
 
-We have used and tested the package only in ROS Indigo. Our NAO is a 3.2 NAO, so we don't know how this performs in newer versions of the robot.
+We have used and tested the package only in ROS Indigo. Our NAO is a 3.2 NAO, so we don't know how this packages perform in newer versions of the robot.
 
 Running NAOkinator
 ------------------
@@ -19,7 +19,7 @@ To play the game we have assumed a setting in which the NAO is sitting on a tabl
 To run the NAOkinator, one should run:
   1. Start ROS master node running `roscore`
   2. The nao_basic launch from nao_utils package `roslaunch nao_utils nao_basic.launch`
-  3. The akinator_rossrv node which runs the service that connects to Akinator `rosrun naokinator_ros akinator_rossrv.py`
+  3. The akinator_rossrv node which runs a service that connects to Akinator `rosrun naokinator_ros akinator_rossrv.py`
   4. The game node `rosrun naokinator_ros start_naokinator.py`
 
   
